@@ -1,13 +1,15 @@
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useSession } from "@/lib/session-context"
 import { supabase } from "@/lib/supabase"
 
 export default function DemoPage() {
   const { user } = useSession()
+  const navigate = useNavigate()
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    window.location.assign("/")
+    navigate("/", { replace: true })
   }
 
   return (
