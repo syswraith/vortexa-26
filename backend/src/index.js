@@ -89,7 +89,7 @@ app.use((req, res) => {
 });
 
 if (process.env.NODE_ENV !== "test" && !process.env.VERCEL) {
-  app.listen(port, "0.0.0.0", () => {
+  app.listen(3000, "localhost", () => {
     console.log(`Server running on port ${port}`);
   });
 }
