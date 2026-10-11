@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { generateIpObservation } from "./services/generateIPLocation.js";
 import { assessCurrentLocation } from "./services/ipLocationRisk.js";
+import { evaluateFingerprintRisk, saveOrUpdateFingerprint, promoteFingerprintTrust, getUserFingerprints } from "./services/fingerprintRisk.js";
+import { assessAuthRisk } from "./services/authRiskAggregator.js";
 import { getSupabaseClient } from "./lib/supabase.js";
 
 const app = express();
@@ -64,10 +66,53 @@ app.get("/test", async (req, res) => {
 // Auth reporting endpoint used by frontend
 app.post("/auth", async (req, res) => {
   try {
-    const { action, fp1, fp2, email, isBot } = req.body || {};
+    const { action, fp1, fp2, email, isBot, accessToken } = req.body || {};
+    
+    let userId = null;
+    if (accessToken) {
+      try {
+        const supabase = getSupabaseClient();
+        const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+        if (!error && user) {
+          userId = user.id;
+        }
+      } catch (tokenErr) {
+        console.warn("Could not verify access token:", tokenErr.message);
+      }
+    }
+
     let risk = null;
+    let ipAssessment = null;
+    let fpResult = null;
+    let combinedAssessment = null;
+
     try {
-      risk = await generateIpObservation(req);
+      if (userId) {
+        // 1. IP Location Risk
+        const ipResult = await generateAndAssessIpRisk(req, userId);
+        risk = ipResult.observation;
+        ipAssessment = ipResult.assessment;
+
+        // 2. Fingerprint Risk
+        const fingerprints = await getUserFingerprints(userId);
+        fpResult = evaluateFingerprintRisk(userId, fp1, fp2, fingerprints);
+        
+        // Save/update fingerprint
+        await saveOrUpdateFingerprint(userId, fp1, fp2, req.headers['user-agent']);
+
+        // 3. Combined Risk Assessment
+        combinedAssessment = await assessAuthRisk({
+          ipAssessment,
+          fpResult,
+          action: action || "login",
+          userAgent: req.headers['user-agent'],
+          ipAddress: risk?.ip_address,
+          accountId: userId,
+        });
+      } else {
+        // For unauthenticated requests: just generate observation (no DB save)
+        risk = await generateIpObservation(req);
+      }
     } catch (riskErr) {
       console.warn("Could not generate IP risk for /auth:", riskErr.message);
     }
@@ -77,6 +122,9 @@ app.post("/auth", async (req, res) => {
       action: action || "login",
       reported: true,
       ipObservation: risk,
+      ipAssessment,
+      fingerprintAssessment: fpResult,
+      assessment: combinedAssessment,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

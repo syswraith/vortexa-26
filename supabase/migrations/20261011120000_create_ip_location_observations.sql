@@ -13,8 +13,7 @@
 
 CREATE TABLE IF NOT EXISTS public.ip_location_observations (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    account_id UUID NOT NULL
-        REFERENCES public."Users"(uid) ON DELETE CASCADE,
+    account_id UUID NOT NULL,
 
     ip_address INET NOT NULL,
     country_code TEXT,
