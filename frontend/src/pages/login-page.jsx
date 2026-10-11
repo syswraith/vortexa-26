@@ -34,10 +34,6 @@ export default function LoginPage() {
     setError("")
     setNotice("")
 
-    void submitAuth(action, { email, password }, fingerprints).catch((reason) => {
-      console.error("Failed to report auth attempt:", reason)
-    })
-
     try {
       if (action === "create") {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -47,13 +43,36 @@ export default function LoginPage() {
         if (signUpError) throw signUpError
         if (!data.session) {
           setNotice("Check your email to confirm your account.")
+        } else if (data.session?.access_token) {
+          // Report auth with access token for IP risk assessment
+          void submitAuth(action, { email, password }, fingerprints, data.session.access_token).catch((reason) => {
+            console.error("Failed to report auth attempt:", reason)
+          })
+        }
+        // Sync auth.users -> public."Users" with same UUID
+        if (data.user?.id) {
+          const { error: usersError } = await supabase
+            .from("Users")
+            .insert({ uid: data.user.id, email: data.user.email })
+            .select()
+            .single()
+          if (usersError) {
+            console.warn("Could not sync user to public.Users:", usersError.message)
+          }
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (signInError) throw signInError
+        
+        // After successful sign in, report auth with access token for IP risk assessment
+        if (data.session?.access_token) {
+          void submitAuth(action, { email, password }, fingerprints, data.session.access_token).catch((reason) => {
+            console.error("Failed to report auth attempt:", reason)
+          })
+        }
       }
     } catch (reason) {
       setError(
