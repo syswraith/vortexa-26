@@ -68,7 +68,7 @@ export default function LoginPage() {
           password,
         })
         if (signInError) throw signInError
-        
+
         // After successful sign in, report auth with access token for IP risk assessment
         if (data.session?.access_token) {
           void submitAuth(action, { email, password }, fingerprints, data.session.access_token).catch((reason) => {
@@ -147,6 +147,15 @@ export default function LoginPage() {
           >
             {pending === "create" ? "Creating…" : "Create account"}
           </Button>
+        </div>
+
+        <div className="pt-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            Powered by{" "}
+            <span className="font-semibold tracking-wide text-foreground">
+              IdentityGuard
+            </span>
+          </p>
         </div>
       </form>
     </main>
