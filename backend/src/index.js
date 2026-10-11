@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import { generateIpObservation } from "./services/generateIPLocation.js";
 import { assessCurrentLocation } from "./services/ipLocationRisk.js";
-import { pathChangeGuard } from "./middleware/pathChangeGuard.js";
 import { evaluateFingerprintRisk, saveOrUpdateFingerprint, promoteFingerprintTrust, getUserFingerprints } from "./services/fingerprintRisk.js";
 import { assessAuthRisk } from "./services/authRiskAggregator.js";
 import { getSupabaseClient } from "./lib/supabase.js";
@@ -44,7 +43,6 @@ app.get("/", (req, res) => {
       "/auth/update-password",
       "/update-email",
       "/update-password"
-      "/account"
     ],
   });
 });
@@ -140,20 +138,6 @@ app.get("/auth", (req, res) => {
   });
 });
 
-// Protected resource: the guard blocks sessions that just performed a
-// sensitive path change (password / email / ...). Clients send the
-// session id in the x-vortexa-session-id header. Apply the guard to
-// any route that should be unreachable after such a change:
-//   app.use("/account", pathChangeGuard());
-app.use("/account", pathChangeGuard());
-
-app.get("/account", (req, res) => {
-  res.json({
-    ok: true,
-    message:
-      "You may proceed: no sensitive path change was detected " +
-      "for this session.",
-  });
 // API endpoint to update email in both auth.users and public."Users"
 app.post("/auth/update-email", async (req, res) => {
   try {
@@ -231,8 +215,7 @@ app.use((req, res) => {
       "/test",
       "/auth",
       "/auth/update-email",
-      "/auth/update-password",
-      "/account"
+      "/auth/update-password"
     ],
   });
 });
