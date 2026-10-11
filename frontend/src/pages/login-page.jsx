@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { generateFingerprints } from "@/lib/fingerprint"
 import { submitAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const [fingerprints, setFingerprints] = useState(null)
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [pending, setPending] = useState("")
   const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
 
   useEffect(() => {
     let active = true
@@ -30,9 +32,31 @@ export default function LoginPage() {
 
     setPending(action)
     setError("")
+    setNotice("")
+
+    void submitAuth(action, { email, password }, fingerprints).catch((reason) => {
+      console.error("Failed to report auth attempt:", reason)
+    })
 
     try {
-      await submitAuth(action, { email, password }, fingerprints)
+      if (action === "create") {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        })
+        if (signUpError) throw signUpError
+        if (!data.session) {
+          setNotice("Check your email to confirm your account.")
+          return
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (signInError) throw signInError
+      }
+
       window.location.assign("/demo")
     } catch (reason) {
       setError(
@@ -78,6 +102,12 @@ export default function LoginPage() {
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}
+          </p>
+        ) : null}
+
+        {notice ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {notice}
           </p>
         ) : null}
 
