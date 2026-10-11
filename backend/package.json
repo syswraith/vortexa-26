@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "demo:ip-risk": "node scripts/demoIpLocationRisk.js"
+    "demo:ip-risk": "node scripts/demoIpLocationRisk.js",
+    "demo:path-change": "node scripts/demoPathChangeDetector.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
