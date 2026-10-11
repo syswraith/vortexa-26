@@ -54,6 +54,7 @@ export async function saveAuthRiskAssessment(assessment) {
     action: assessment.action || "login",
     user_agent: assessment.user_agent || null,
     ip_address: assessment.ip_address || null,
+    ip_json: assessment.ip_json ?? {},
   };
 
   const { data, error } = await supabase
@@ -133,6 +134,7 @@ export async function assessAuthRisk({ ipAssessment, fpResult, action, userAgent
       action,
       user_agent: userAgent,
       ip_address: ipAddress,
+      ip_json: ipAssessment ?? {},
     });
   }
 

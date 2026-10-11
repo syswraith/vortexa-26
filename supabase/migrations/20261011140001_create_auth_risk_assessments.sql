@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.auth_risk_assessments (
     action TEXT NOT NULL,
     user_agent TEXT,
     ip_address INET,
+    ip_json JSONB,
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
