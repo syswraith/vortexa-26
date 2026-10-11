@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { generateIpObservation } from "./services/generateIPLocation.js";
 import { assessCurrentLocation } from "./services/ipLocationRisk.js";
+import { pathChangeGuard } from "./middleware/pathChangeGuard.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -30,7 +31,7 @@ app.get("/", (req, res) => {
     status: "ok",
     service: "vortexa-backend",
     message: "Vortexa backend API is running",
-    endpoints: ["/", "/health", "/test", "/auth"],
+    endpoints: ["/", "/health", "/test", "/auth", "/account"],
   });
 });
 
@@ -79,12 +80,28 @@ app.get("/auth", (req, res) => {
   });
 });
 
+// Protected resource: the guard blocks sessions that just performed a
+// sensitive path change (password / email / ...). Clients send the
+// session id in the x-vortexa-session-id header. Apply the guard to
+// any route that should be unreachable after such a change:
+//   app.use("/account", pathChangeGuard());
+app.use("/account", pathChangeGuard());
+
+app.get("/account", (req, res) => {
+  res.json({
+    ok: true,
+    message:
+      "You may proceed: no sensitive path change was detected " +
+      "for this session.",
+  });
+});
+
 // Friendly JSON 404 handler for unrecognized routes
 app.use((req, res) => {
   res.status(404).json({
     error: "Not Found",
     message: `Cannot ${req.method} ${req.path}`,
-    availableEndpoints: ["/", "/health", "/test", "/auth"],
+    availableEndpoints: ["/", "/health", "/test", "/auth", "/account"],
   });
 });
 
