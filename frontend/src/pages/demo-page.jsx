@@ -8,7 +8,7 @@ export default function DemoPage() {
   const navigate = useNavigate()
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: "local" })
     navigate("/", { replace: true })
   }
 
@@ -23,6 +23,14 @@ export default function DemoPage() {
         </div>
 
         <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-center"
+            onClick={() => navigate("/dashboard")}
+          >
+            Dashboard
+          </Button>
           <Button
             type="button"
             variant="outline"

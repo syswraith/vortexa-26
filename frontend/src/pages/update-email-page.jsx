@@ -74,7 +74,7 @@ export default function UpdateEmailPage() {
       }).catch(() => { })
 
       // 3. Log out after update as requested
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: "local" })
       navigate("/", {
         replace: true,
         state: {

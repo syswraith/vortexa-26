@@ -3,6 +3,7 @@ import DemoPage from "@/pages/demo-page"
 import LoginPage from "@/pages/login-page"
 import UpdateEmailPage from "@/pages/update-email-page"
 import UpdatePasswordPage from "@/pages/update-password-page"
+import Dashboard from "@/pages/dashboard-page"
 import { useSession } from "@/lib/session-context"
 
 function HomeRoute() {
@@ -80,6 +81,14 @@ function App() {
         element={
           <ProtectedRoute>
             <UpdatePasswordPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
           </ProtectedRoute>
         }
       />
