@@ -61,10 +61,29 @@ alongside it. The login page generates fingerprints on load; once ready,
 
 2. Authenticate with Supabase (`signInWithPassword` or `signUp`).
 
-`action` is `"login"` or `"create"`. On success the app navigates to `/demo`.
-If email confirmation is enabled, creating an account shows a "check your
-email" notice instead; after confirming, the user can log in. Supabase errors
-are shown inline.
+`action` is `"login"` or `"create"`. On success the app redirects to `/demo`
+via React Router. If email confirmation is enabled, creating an account shows a
+"check your email" notice instead; after confirming, the user can log in.
+Supabase errors are shown inline.
+
+## Session tracking
+
+Once authenticated, the frontend writes directly to Supabase (RLS-scoped to the
+signed-in user):
+
+- **Session** — one `user_sessions` row per login, keyed per user in
+  `sessionStorage` (`vortexa.sessionId:<userId>`). The id is reused across page
+  reloads in the same tab and cleared on sign-out.
+- **Heartbeat** — immediately on session start and then every 10s,
+  `last_seen_at` is refreshed for as long as the session is active (no tab
+  visibility gate). If the update matches no row, it logs an error so RLS
+  misconfiguration is visible instead of silently dropped.
+- **Navigation** — a `session_navigation_events` row is inserted per route
+  change, deduped by session + path.
+
+Apply the schema and RLS policies from
+`supabase/migrations/20260101000000_session_tracking.sql` (Supabase SQL editor or
+`supabase db push`). The tables reference `auth.users(id)`.
 
 ## Scripts
 
@@ -77,10 +96,12 @@ are shown inline.
 
 ## Routes
 
-- `/` — login/signup page (fingerprint collection + Supabase auth)
+- `/` — login/signup page (fingerprint collection + Supabase auth). Redirects to
+  `/demo` when already signed in.
 - `/demo` — authenticated welcome page (redirects to `/` when signed out)
 
 ## Configuration
 
 - Supabase credentials live in `frontend/.env.local` (see `.env.example`).
 - The backend target for the `/auth` proxy is set in `vite.config.js`.
+- Session tracking SQL lives in `supabase/migrations/`.

@@ -47,7 +47,6 @@ export default function LoginPage() {
         if (signUpError) throw signUpError
         if (!data.session) {
           setNotice("Check your email to confirm your account.")
-          return
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -56,8 +55,6 @@ export default function LoginPage() {
         })
         if (signInError) throw signInError
       }
-
-      window.location.assign("/demo")
     } catch (reason) {
       setError(
         reason instanceof Error ? reason.message : "Something went wrong.",
