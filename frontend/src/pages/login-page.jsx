@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { generateFingerprints } from "@/lib/fingerprint"
 import { submitAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
+  const location = useLocation()
   const [fingerprints, setFingerprints] = useState(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [pending, setPending] = useState("")
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useState(location.state?.notice ?? "")
 
   useEffect(() => {
     let active = true
@@ -34,10 +36,6 @@ export default function LoginPage() {
     setError("")
     setNotice("")
 
-    void submitAuth(action, { email, password }, fingerprints).catch((reason) => {
-      console.error("Failed to report auth attempt:", reason)
-    })
-
     try {
       if (action === "create") {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -47,13 +45,36 @@ export default function LoginPage() {
         if (signUpError) throw signUpError
         if (!data.session) {
           setNotice("Check your email to confirm your account.")
+        } else if (data.session?.access_token) {
+          // Report auth with access token for IP risk assessment
+          void submitAuth(action, { email, password }, fingerprints, data.session.access_token).catch((reason) => {
+            console.error("Failed to report auth attempt:", reason)
+          })
+        }
+        // Sync auth.users -> public."Users" with same UUID
+        if (data.user?.id) {
+          const { error: usersError } = await supabase
+            .from("Users")
+            .insert({ uid: data.user.id, email: data.user.email })
+            .select()
+            .single()
+          if (usersError) {
+            console.warn("Could not sync user to public.Users:", usersError.message)
+          }
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (signInError) throw signInError
+
+        // After successful sign in, report auth with access token for IP risk assessment
+        if (data.session?.access_token) {
+          void submitAuth(action, { email, password }, fingerprints, data.session.access_token).catch((reason) => {
+            console.error("Failed to report auth attempt:", reason)
+          })
+        }
       }
     } catch (reason) {
       setError(
@@ -126,6 +147,15 @@ export default function LoginPage() {
           >
             {pending === "create" ? "Creating…" : "Create account"}
           </Button>
+        </div>
+
+        <div className="pt-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            Powered by{" "}
+            <span className="font-semibold tracking-wide text-foreground">
+              IdentityGuard
+            </span>
+          </p>
         </div>
       </form>
     </main>

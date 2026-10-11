@@ -13,14 +13,42 @@ export default function DemoPage() {
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-4 px-4">
-      <h1 className="text-xl font-semibold">Welcome, user</h1>
-      {user?.email ? (
-        <p className="text-sm text-muted-foreground">{user.email}</p>
-      ) : null}
-      <Button type="button" variant="outline" onClick={handleSignOut}>
-        Sign out
-      </Button>
+    <main className="flex min-h-svh items-center justify-center px-4">
+      <div className="w-full max-w-sm space-y-4">
+        <div className="space-y-1 text-center">
+          <h1 className="text-xl font-semibold">Welcome, user</h1>
+          {user?.email ? (
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-center"
+            onClick={() => navigate("/update-creds")}
+          >
+            Update email
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-center"
+            onClick={() => navigate("/update-password")}
+          >
+            Update password
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-center text-muted-foreground hover:text-foreground"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </Button>
+        </div>
+      </div>
     </main>
   )
 }

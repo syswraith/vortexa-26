@@ -11,7 +11,7 @@ function responseMessage(payload) {
   return ""
 }
 
-export async function submitAuth(action, credentials, fingerprints) {
+export async function submitAuth(action, credentials, fingerprints, accessToken) {
   const response = await fetch("/auth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -22,6 +22,7 @@ export async function submitAuth(action, credentials, fingerprints) {
       email: credentials.email,
       password: credentials.password,
       isBot: isbot(navigator.userAgent),
+      accessToken,
     }),
   })
   const payload = await response.json().catch(() => null)
