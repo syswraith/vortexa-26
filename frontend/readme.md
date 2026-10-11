@@ -1,12 +1,13 @@
 # vortexa frontend
 
 React + Vite single-page app. It renders a login/signup page, collects browser
-fingerprints (FingerprintJS + ThumbmarkJS), and posts them to the backend when
-the user logs in or creates an account.
+fingerprints (FingerprintJS + ThumbmarkJS), posts them to the backend, and
+authenticates users with Supabase.
 
 ## Requirements
 
 - [Bun](https://bun.sh) (used for install and scripts)
+- A [Supabase](https://supabase.com) project (Project URL + publishable/anon key)
 - A backend listening on `http://localhost:3000` exposing `POST /auth`
 
 ## Install
@@ -14,6 +15,24 @@ the user logs in or creates an account.
 ```sh
 bun install
 ```
+
+## Configure
+
+Copy the env template and fill it in:
+
+```sh
+cp .env.example .env.local
+```
+
+`.env.local` (git-ignored):
+
+```
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your publishable/anon key>
+```
+
+In the Supabase dashboard, add `http://localhost:5173` under **Authentication →
+URL Configuration** (Site URL and Redirect URLs) so confirmation links work.
 
 ## Run (development)
 
@@ -24,8 +43,10 @@ bun run dev
 Vite starts on <http://localhost:5173>. Open that URL to see the login page.
 
 The dev server proxies `/auth` to `http://localhost:3000`, so run the backend
-alongside it. The `Login page` generates fingerprints on load; once ready,
-"Log in" and "Create account" send this JSON to `POST /auth`:
+alongside it. The login page generates fingerprints on load; once ready,
+"Log in" and "Create account" do the following:
+
+1. Report the attempt to `POST /auth` with this JSON:
 
 ```json
 {
@@ -38,9 +59,12 @@ alongside it. The `Login page` generates fingerprints on load; once ready,
 }
 ```
 
-`action` is `"login"` or `"create"`. On a `2xx` response the app navigates to
-`/demo`, which shows the welcome page. Non-`2xx` responses are surfaced on the
-page using the response `message` or `error` field.
+2. Authenticate with Supabase (`signInWithPassword` or `signUp`).
+
+`action` is `"login"` or `"create"`. On success the app navigates to `/demo`.
+If email confirmation is enabled, creating an account shows a "check your
+email" notice instead; after confirming, the user can log in. Supabase errors
+are shown inline.
 
 ## Scripts
 
@@ -53,10 +77,10 @@ page using the response `message` or `error` field.
 
 ## Routes
 
-- `/` — login/signup page (fingerprint collection)
-- `/demo` — static welcome page shown after a successful login/signup
+- `/` — login/signup page (fingerprint collection + Supabase auth)
+- `/demo` — authenticated welcome page (redirects to `/` when signed out)
 
 ## Configuration
 
-The backend target for the `/auth` proxy is set in `vite.config.js`. Change it
-there if the backend runs on a different host or port.
+- Supabase credentials live in `frontend/.env.local` (see `.env.example`).
+- The backend target for the `/auth` proxy is set in `vite.config.js`.
