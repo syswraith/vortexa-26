@@ -1,5 +1,4 @@
 const fingerprintTimeoutMs = 3000
-const unavailableSignal = "unavailable"
 
 function loadScript(source) {
   return new Promise((resolve, reject) => {
@@ -24,18 +23,7 @@ function withTimeout(promise, timeoutMs) {
   ])
 }
 
-function responseMessage(payload) {
-  if (typeof payload !== "object" || payload === null) return ""
-  if ("message" in payload && typeof payload.message === "string") {
-    return payload.message
-  }
-  if ("error" in payload && typeof payload.error === "string") {
-    return payload.error
-  }
-  return ""
-}
-
-export async function collectFingerprint() {
+export async function generateFingerprints() {
   await Promise.allSettled([
     loadScript("/fp.min.js"),
     loadScript("/thumbmark.umd.js"),
@@ -47,38 +35,19 @@ export async function collectFingerprint() {
         .then((result) => result.visitorId)
         .catch((error) => {
           console.error("FingerprintJS failed:", error)
-          return unavailableSignal
+          return ""
         })
-    : Promise.resolve(unavailableSignal)
+    : Promise.resolve("")
 
   const thumbmark = window.ThumbmarkJS
     ? withTimeout(new window.ThumbmarkJS.Thumbmark().get(), fingerprintTimeoutMs)
         .then((result) => result.thumbmark)
         .catch((error) => {
           console.error("ThumbmarkJS failed:", error)
-          return unavailableSignal
+          return ""
         })
-    : Promise.resolve(unavailableSignal)
+    : Promise.resolve("")
 
-  const [visitorId, thumbmarkId] = await Promise.all([fingerprint, thumbmark])
-
-  const response = await fetch("/collect", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fingerprint: visitorId, thumbmark: thumbmarkId }),
-  })
-  const payload = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new Error(responseMessage(payload) || "This link could not be opened.")
-  }
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    typeof payload.longLink !== "string"
-  ) {
-    throw new Error("This link could not be opened.")
-  }
-
-  return payload.longLink
+  const [fp1, fp2] = await Promise.all([fingerprint, thumbmark])
+  return { fp1: fp1 || "", fp2: fp2 || "" }
 }

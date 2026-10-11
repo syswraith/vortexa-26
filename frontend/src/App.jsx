@@ -1,33 +1,12 @@
-import { useMemo } from "react"
-import RedirectPage from "@/pages/redirect-page"
-
-function readRedirectData() {
-  const element = document.getElementById("app-data")
-  if (element?.textContent) {
-    try {
-      const value = JSON.parse(element.textContent)
-
-      if (
-        typeof value === "object" &&
-        value !== null &&
-        "shortLink" in value &&
-        typeof value.shortLink === "string"
-      ) {
-        return { shortLink: value.shortLink }
-      }
-    } catch {
-      return null
-    }
-  }
-
-  const shortLink = window.location.pathname.replace(/^\/+|\/+$/g, "")
-  return shortLink ? { shortLink } : null
-}
+import DemoPage from "@/pages/demo-page"
+import LoginPage from "@/pages/login-page"
 
 function App() {
-  const data = useMemo(() => readRedirectData(), [])
+  const pathname = window.location.pathname.replace(/\/+$/, "")
 
-  return <RedirectPage data={data} />
+  if (pathname === "/demo") return <DemoPage />
+
+  return <LoginPage />
 }
 
 export default App

@@ -1,0 +1,106 @@
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { generateFingerprints } from "@/lib/fingerprint"
+import { submitAuth } from "@/lib/auth"
+
+export default function LoginPage() {
+  const [fingerprints, setFingerprints] = useState(null)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [pending, setPending] = useState("")
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let active = true
+
+    void generateFingerprints().then((result) => {
+      if (active) setFingerprints(result)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const ready = fingerprints !== null
+  const canSubmit = ready && email.length > 0 && password.length > 0 && !pending
+
+  async function handleAction(action) {
+    if (!canSubmit) return
+
+    setPending(action)
+    setError("")
+
+    try {
+      await submitAuth(action, { email, password }, fingerprints)
+      window.location.assign("/demo")
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Something went wrong.",
+      )
+    } finally {
+      setPending("")
+    }
+  }
+
+  return (
+    <main className="flex min-h-svh items-center justify-center px-4">
+      <form
+        className="w-full max-w-sm space-y-4"
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <div className="space-y-1 text-center">
+          <h1 className="text-xl font-semibold">Welcome</h1>
+          <p className="text-sm text-muted-foreground">
+            {ready ? "Sign in or create an account." : "Preparing secure session…"}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <input
+            type="email"
+            autoComplete="email"
+            placeholder="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          <input
+            type="password"
+            autoComplete="current-password"
+            placeholder="Password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </div>
+
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            className="flex-1"
+            disabled={!canSubmit}
+            onClick={() => handleAction("login")}
+          >
+            {pending === "login" ? "Logging in…" : "Log in"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            disabled={!canSubmit}
+            onClick={() => handleAction("create")}
+          >
+            {pending === "create" ? "Creating…" : "Create account"}
+          </Button>
+        </div>
+      </form>
+    </main>
+  )
+}
