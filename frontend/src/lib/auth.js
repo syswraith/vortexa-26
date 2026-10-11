@@ -12,7 +12,7 @@ function responseMessage(payload) {
 }
 
 export async function submitAuth(action, credentials, fingerprints) {
-  const response = await fetch("/auth", {
+  const response = await fetch("/api/auth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

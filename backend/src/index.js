@@ -4,7 +4,7 @@ import { generateIpObservation } from "./services/generateIPLocation.js";
 import { assessCurrentLocation } from "./services/ipLocationRisk.js";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const api = express.Router();
 
 app.use(cors());
 app.use(express.json());
@@ -23,11 +23,11 @@ export async function generateAndAssessIpRisk(req, userId) {
   };
 }
 
-app.get("/health", (req, res) => {
+api.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/test", async (req, res) => {
+api.get("/test", async (req, res) => {
   try {
     const result = await generateAndAssessIpRisk(
       req,
@@ -39,7 +39,13 @@ app.get("/test", async (req, res) => {
   }
 });
 
+app.use("/api", api);
 
-app.listen(3000, "0.0.0.0", () => {
-  console.log("Server running on port 3000");
-});
+export default app;
+
+if (process.env.VERCEL !== "1") {
+  const port = process.env.PORT || 3000;
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on port ${port}`);
+  });
+}

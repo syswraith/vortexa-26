@@ -8,7 +8,7 @@ authenticates users with Supabase.
 
 - [Bun](https://bun.sh) (used for install and scripts)
 - A [Supabase](https://supabase.com) project (Project URL + publishable/anon key)
-- A backend listening on `http://localhost:3000` exposing `POST /auth`
+- A backend listening on `http://localhost:3000` exposing `POST /api/auth`
 
 ## Install
 
@@ -42,11 +42,11 @@ bun run dev
 
 Vite starts on <http://localhost:5173>. Open that URL to see the login page.
 
-The dev server proxies `/auth` to `http://localhost:3000`, so run the backend
+The dev server proxies `/api` to `http://localhost:3000`, so run the backend
 alongside it. The login page generates fingerprints on load; once ready,
 "Log in" and "Create account" do the following:
 
-1. Report the attempt to `POST /auth` with this JSON:
+1. Report the attempt to `POST /api/auth` with this JSON:
 
 ```json
 {
@@ -103,5 +103,20 @@ Apply the schema and RLS policies from
 ## Configuration
 
 - Supabase credentials live in `frontend/.env.local` (see `.env.example`).
-- The backend target for the `/auth` proxy is set in `vite.config.js`.
+- The backend target for the `/api` proxy is set in `vite.config.js`.
 - Session tracking SQL lives in `supabase/migrations/`.
+
+## Deploy (Vercel)
+
+The repository deploys as one Vercel project with two services (`vercel.json` at
+the repo root): `frontend` (Vite) is public at `/`, and `backend` (Express) is
+public under `/api/*`. The backend runs as a Vercel Function and serves its
+routes under `/api` (`GET /api/health`, `GET /api/test`).
+
+Set these Vercel environment variables:
+
+- Build (frontend): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- Runtime (backend): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+Add the production domain to Supabase under **Authentication → URL
+Configuration**, and run `vercel dev` to exercise both services locally.
