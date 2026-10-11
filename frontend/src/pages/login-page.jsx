@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { generateFingerprints } from "@/lib/fingerprint"
 import { submitAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
+  const location = useLocation()
   const [fingerprints, setFingerprints] = useState(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [pending, setPending] = useState("")
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useState(location.state?.notice ?? "")
 
   useEffect(() => {
     let active = true
