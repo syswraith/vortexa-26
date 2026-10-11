@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { generateIpObservation } from "./services/generateIPLocation.js";
 import { assessCurrentLocation } from "./services/ipLocationRisk.js";
+import { evaluateFingerprintRisk, saveOrUpdateFingerprint, promoteFingerprintTrust, getUserFingerprints } from "./services/fingerprintRisk.js";
+import { assessAuthRisk } from "./services/authRiskAggregator.js";
 import { getSupabaseClient } from "./lib/supabase.js";
 
 const app = express();
@@ -70,14 +72,33 @@ app.post("/auth", async (req, res) => {
     }
 
     let risk = null;
-    let assessment = null;
+    let ipAssessment = null;
+    let fpResult = null;
+    let combinedAssessment = null;
+
     try {
       if (userId) {
-        // For authenticated users: generate observation, assess risk, and save to DB
-        const result = await generateAndAssessIpRisk(req, userId);
-        risk = result.observation;
-        assessment = result.assessment;
-        console.log(assessment)
+        // 1. IP Location Risk
+        const ipResult = await generateAndAssessIpRisk(req, userId);
+        risk = ipResult.observation;
+        ipAssessment = ipResult.assessment;
+
+        // 2. Fingerprint Risk
+        const fingerprints = await getUserFingerprints(userId);
+        fpResult = evaluateFingerprintRisk(userId, fp1, fp2, fingerprints);
+        
+        // Save/update fingerprint
+        await saveOrUpdateFingerprint(userId, fp1, fp2, req.headers['user-agent']);
+
+        // 3. Combined Risk Assessment
+        combinedAssessment = await assessAuthRisk({
+          ipAssessment,
+          fpResult,
+          action: action || "login",
+          userAgent: req.headers['user-agent'],
+          ipAddress: risk?.ip_address,
+          accountId: userId,
+        });
       } else {
         // For unauthenticated requests: just generate observation (no DB save)
         risk = await generateIpObservation(req);
@@ -91,7 +112,9 @@ app.post("/auth", async (req, res) => {
       action: action || "login",
       reported: true,
       ipObservation: risk,
-      assessment,
+      ipAssessment,
+      fingerprintAssessment: fpResult,
+      assessment: combinedAssessment,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
