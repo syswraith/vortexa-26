@@ -1,8 +1,8 @@
 {
   "rewrites": [
-    { "source": "/auth", "destination": "https://vortex-26.vercel.app/auth" },
-    { "source": "/auth/:path*", "destination": "https://vortex-26.vercel.app/auth/:path*" },
-    { "source": "/api/:path*", "destination": "https://vortex-26.vercel.app/api/:path*" },
+    { "source": "/auth", "destination": "https://vortexa-26.vercel.app/auth" },
+    { "source": "/auth/:path*", "destination": "https://vortexa-26.vercel.app/auth/:path*" },
+    { "source": "/api/:path*", "destination": "https://vortexa-26.vercel.app/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
